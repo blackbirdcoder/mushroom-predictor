@@ -31,6 +31,7 @@ const settings = {
         default: 1,
         xl: 1.5,
     },
+    clickLimit: 100,
 };
 
 function Resource(k, spritesNames, fontName) {
@@ -85,6 +86,37 @@ function Scene(k, settings) {
     };
 }
 
+function ClickHandler(k, activeZone, dataStorage) {
+    this.listen = function () {
+        activeZone.onClick(() => {
+            if (!k.isTouchscreen()) {
+                k.addKaboom(k.mousePos());
+                ++dataStorage.countClick;
+            }
+        });
+
+        activeZone.onTouchStart((_, tap) => {
+            if (tap.identifier === 0) {
+                k.addKaboom(k.mousePos());
+                ++dataStorage.countClick;
+            }
+        });
+
+        activeZone.onUpdate(()=> {
+            k.debug.log(dataStorage.countClick);
+        });
+    };
+}
+
+function Manager(k, settings) {
+    this.dataStorageInit = function () {
+        return {
+            countClick: 0,
+            limit: settings.clickLimit,
+        };
+    };
+}
+
 (function main(settings) {
     const k = kaplay({
         width: settings.scene.width,
@@ -96,6 +128,7 @@ function Scene(k, settings) {
     });
     k.debug.inspect = true; // DELETE
 
+
     k.layers(['scene', 'ui'], 'scene');
     const resource = new Resource(k, settings.sprites, settings.font);
     resource.loader();
@@ -103,11 +136,17 @@ function Scene(k, settings) {
     scene.paintOver();
     const area = scene.clickableArea();
     scene.addChild(area, settings.scales.default, settings.positions.xs.x, settings.positions.xs.y, 'mushroomXS');
+    const manager = new Manager(k, settings);
+    const dataStorage = manager.dataStorageInit();
+    const clickHandler = new ClickHandler(k, area, dataStorage);
+    clickHandler.listen();
 
     //k.add([k.pos(120, 80), k.sprite('backgroundImage'), k.scale(1)]);
 
+    /*
     area.onClick(() => {
-        // zzfx('1.8,0,543,.01,.06,.16,0,2.6,0,30,0,0,0,0,0,0,0,.73,.04,0,550');
-        k.addKaboom(k.mousePos());
+        zzfx('1.8,0,543,.01,.06,.16,0,2.6,0,30,0,0,0,0,0,0,0,.73,.04,0,550');
+       
     });
+    */
 })(settings);
