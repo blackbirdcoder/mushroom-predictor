@@ -90,11 +90,13 @@ function ClickHandler(k, activeZone, dataStorage) {
     this.listen = function (cbProvideNotice) {
         let tapId = undefined;
         activeZone.onClick(() => {
-            if (dataStorage.countClick < dataStorage.limit && !k.isTouchscreen()) ++dataStorage.countClick;
+            if (dataStorage.countClick < dataStorage.limit) {
+                if (!k.isTouchscreen()) ++dataStorage.countClick;
 
-            if (dataStorage.countClick < dataStorage.limit && k.isTouchscreen() && tapId === 0) {
-                tapId = undefined;
-                ++dataStorage.countClick;
+                if (k.isTouchscreen() && tapId === 0) {
+                    tapId = undefined;
+                    ++dataStorage.countClick;
+                }
             }
         });
 
