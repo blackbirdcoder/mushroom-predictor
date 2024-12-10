@@ -31,7 +31,7 @@ const settings = {
         default: 1,
         xl: 1.5,
     },
-    clickLimit: 100,
+    clickLimit: 10, // 100
 };
 
 function Resource(k, spritesNames, fontName) {
@@ -87,23 +87,25 @@ function Scene(k, settings) {
 }
 
 function ClickHandler(k, activeZone, dataStorage) {
-    this.listen = function () {
+    this.listen = function (cbProvideNotice) {
+        let tapId = undefined;
         activeZone.onClick(() => {
-            if (!k.isTouchscreen()) {
-                k.addKaboom(k.mousePos());
+            if (dataStorage.countClick < dataStorage.limit && !k.isTouchscreen()) ++dataStorage.countClick;
+
+            if (dataStorage.countClick < dataStorage.limit && k.isTouchscreen() && tapId === 0) {
+                tapId = undefined;
                 ++dataStorage.countClick;
             }
         });
 
         activeZone.onTouchStart((_, tap) => {
-            if (tap.identifier === 0) {
-                k.addKaboom(k.mousePos());
-                ++dataStorage.countClick;
-            }
+            if (tap.identifier === 0) tapId = tap.identifier;
         });
 
-        activeZone.onUpdate(()=> {
-            k.debug.log(dataStorage.countClick);
+        activeZone.onUpdate(() => {
+            if (dataStorage.countClick === dataStorage.limit) {
+                k.debug.log(cbProvideNotice());
+            }
         });
     };
 }
@@ -114,6 +116,30 @@ function Manager(k, settings) {
             countClick: 0,
             limit: settings.clickLimit,
         };
+    };
+
+    this.provideNotice = function () {
+        return 'YOU WIN';
+    };
+}
+
+function UserInterface(k, settings) {
+    this.topPanel = function () {
+        const options = {
+            width: 336,
+            height: 64,
+            x: 12,
+            y: 12,
+        };
+        const border = k.add([
+            k.rect(options.width, options.height, { fill: false }),
+            k.outline(10, k.WHITE),
+            k.pos(options.x, options.y),
+        ]);
+        const panel = k.add([
+            k.sprite('backgroundText', { tiled: true, width: options.width, height: options.height }),
+            k.pos(options.x, options.y),
+        ]);
     };
 }
 
@@ -128,7 +154,6 @@ function Manager(k, settings) {
     });
     k.debug.inspect = true; // DELETE
 
-
     k.layers(['scene', 'ui'], 'scene');
     const resource = new Resource(k, settings.sprites, settings.font);
     resource.loader();
@@ -136,10 +161,13 @@ function Manager(k, settings) {
     scene.paintOver();
     const area = scene.clickableArea();
     scene.addChild(area, settings.scales.default, settings.positions.xs.x, settings.positions.xs.y, 'mushroomXS');
+    const userInterface = new UserInterface(k, settings);
     const manager = new Manager(k, settings);
     const dataStorage = manager.dataStorageInit();
     const clickHandler = new ClickHandler(k, area, dataStorage);
-    clickHandler.listen();
+    clickHandler.listen(manager.provideNotice);
+    userInterface.topPanel();
+    // TODO: Continue. UI add score text
 
     //k.add([k.pos(120, 80), k.sprite('backgroundImage'), k.scale(1)]);
 
