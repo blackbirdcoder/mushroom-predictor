@@ -31,7 +31,7 @@ const settings = {
         default: 1,
         xl: 1.5,
     },
-    clickLimit: 10, // 100
+    clickLimit: 100,
 };
 
 function Resource(k, spritesNames, fontName) {
@@ -87,21 +87,24 @@ function Scene(k, settings) {
 }
 
 function ClickHandler(k, activeZone, dataStorage) {
-    this.listen = function (cbProvideNotice) {
-        let tapId = undefined;
+    this.listen = function (cbProvideNotice, cbPanelScoreUpdate) {
+        const tapsAllowed = 1;
+        let taps = 0;
+
+        window.addEventListener('touchstart', (e) => (taps = e.touches.length));
+
         activeZone.onClick(() => {
             if (dataStorage.countClick < dataStorage.limit) {
-                if (!k.isTouchscreen()) ++dataStorage.countClick;
-
-                if (k.isTouchscreen() && tapId === 0) {
-                    tapId = undefined;
+                if (!k.isTouchscreen()) {
                     ++dataStorage.countClick;
+                    cbPanelScoreUpdate(dataStorage.countClick);
+                }
+
+                if (k.isTouchscreen() && taps === tapsAllowed) {
+                    ++dataStorage.countClick;
+                    cbPanelScoreUpdate(dataStorage.countClick);
                 }
             }
-        });
-
-        activeZone.onTouchStart((_, tap) => {
-            if (tap.identifier === 0) tapId = tap.identifier;
         });
 
         activeZone.onUpdate(() => {
@@ -126,6 +129,8 @@ function Manager(k, settings) {
 }
 
 function UserInterface(k, settings) {
+    this.panelScore = null;
+
     this.topPanel = function () {
         const options = {
             width: 336,
@@ -138,10 +143,21 @@ function UserInterface(k, settings) {
             k.outline(10, k.WHITE),
             k.pos(options.x, options.y),
         ]);
+
         const panel = k.add([
             k.sprite('backgroundText', { tiled: true, width: options.width, height: options.height }),
             k.pos(options.x, options.y),
         ]);
+
+        panel.add([k.text(`/${settings.clickLimit}`, { size: 60, font: settings.font }), k.pos(options.x + 135, 0)]);
+        this.panelScore = panel;
+    };
+
+    this.panelScoreUpdate = (value) => {
+        let posX = 100;
+        if (value >= 10) posX = value >= 10 && value < settings.clickLimit ? 60 : 20;
+        this.panelScore.children.splice(1);
+        this.panelScore.add([k.text(`${value}`, { size: 60, font: settings.font }), k.pos(posX, 0)]);
     };
 }
 
@@ -152,9 +168,12 @@ function UserInterface(k, settings) {
         stretch: true,
         letterbox: true,
         pixelDensity: 2,
+        crisp: true,
+        texFilter: 'nearest',
         debugKey: 'd', // DELETE
     });
     k.debug.inspect = true; // DELETE
+    k.onTouchStart;
 
     k.layers(['scene', 'ui'], 'scene');
     const resource = new Resource(k, settings.sprites, settings.font);
@@ -167,9 +186,9 @@ function UserInterface(k, settings) {
     const manager = new Manager(k, settings);
     const dataStorage = manager.dataStorageInit();
     const clickHandler = new ClickHandler(k, area, dataStorage);
-    clickHandler.listen(manager.provideNotice);
     userInterface.topPanel();
-    // TODO: Continue. UI add score text
+    userInterface.panelScoreUpdate(0);
+    clickHandler.listen(manager.provideNotice, userInterface.panelScoreUpdate);
 
     //k.add([k.pos(120, 80), k.sprite('backgroundImage'), k.scale(1)]);
 
