@@ -87,7 +87,7 @@ function Scene(k, settings) {
 }
 
 function ClickHandler(k, activeZone, dataStorage, settings) {
-    this.listen = function (cbProvideNotice, cbPanelScoreUpdate, cbAddChild) {
+    this.listen = function (cbProvideNotice, cbPanelScoreUpdate, cbAddChild, cbVisualEffectScattering) {
         const tapsAllowed = 1;
         let taps = 0;
 
@@ -98,15 +98,18 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
                 if (!k.isTouchscreen()) {
                     ++dataStorage.countClick;
                     cbPanelScoreUpdate(dataStorage.countClick);
+                    cbVisualEffectScattering(k.mousePos());
                 }
 
                 if (k.isTouchscreen() && taps === tapsAllowed) {
                     ++dataStorage.countClick;
                     cbPanelScoreUpdate(dataStorage.countClick);
+                    cbVisualEffectScattering(k.mousePos());
                 }
+
             }
         });
-        
+
         activeZone.onUpdate(() => {
             switch (dataStorage.countClick) {
                 case dataStorage.growPoints.s:
@@ -202,6 +205,23 @@ function UserInterface(k, settings) {
     };
 }
 
+function VisualEffect(k) {
+    this.scattering = function (position) {
+        const directions = [k.LEFT, k.UP, k.RIGHT, k.DOWN, k.vec2(1, 1), k.vec2(-1, -1), k.vec2(1, -1), k.vec2(-1, 1)];
+        directions.forEach((dir) => {
+            k.add([
+                k.pos(position),
+                k.sprite('star'),
+                k.scale(0.5),
+                k.anchor('center'),
+                k.opacity(0.7),
+                k.lifespan(0.4, { fade: 0.2 }),
+                k.move(dir, k.rand(230, 330)),
+            ]);
+        });
+    };
+}
+
 (function main(settings) {
     const k = kaplay({
         width: settings.scene.width,
@@ -226,10 +246,11 @@ function UserInterface(k, settings) {
     const userInterface = new UserInterface(k, settings);
     const manager = new Manager(k, settings);
     const dataStorage = manager.dataStorageInit();
+    const visualEffect = new VisualEffect(k);
     const clickHandler = new ClickHandler(k, area, dataStorage, settings);
     userInterface.topPanel();
     userInterface.panelScoreUpdate(0);
-    clickHandler.listen(manager.provideNotice, userInterface.panelScoreUpdate, scene.addChild);
+    clickHandler.listen(manager.provideNotice, userInterface.panelScoreUpdate, scene.addChild, visualEffect.scattering);
 
     /*
     area.onClick(() => {
