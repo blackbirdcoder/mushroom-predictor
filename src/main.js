@@ -86,8 +86,8 @@ function Scene(k, settings) {
     };
 }
 
-function ClickHandler(k, activeZone, dataStorage) {
-    this.listen = function (cbProvideNotice, cbPanelScoreUpdate) {
+function ClickHandler(k, activeZone, dataStorage, settings) {
+    this.listen = function (cbProvideNotice, cbPanelScoreUpdate, cbAddChild) {
         const tapsAllowed = 1;
         let taps = 0;
 
@@ -106,10 +106,46 @@ function ClickHandler(k, activeZone, dataStorage) {
                 }
             }
         });
-
+        
         activeZone.onUpdate(() => {
-            if (dataStorage.countClick === dataStorage.limit) {
-                k.debug.log(cbProvideNotice());
+            switch (dataStorage.countClick) {
+                case dataStorage.growPoints.s:
+                    cbAddChild(
+                        activeZone,
+                        settings.scales.default,
+                        settings.positions.s.x,
+                        settings.positions.s.y,
+                        'mushroomS'
+                    );
+                    break;
+                case dataStorage.growPoints.m:
+                    cbAddChild(
+                        activeZone,
+                        settings.scales.default,
+                        settings.positions.m.x,
+                        settings.positions.m.y,
+                        'mushroomM'
+                    );
+                    break;
+                case dataStorage.growPoints.l:
+                    cbAddChild(
+                        activeZone,
+                        settings.scales.default,
+                        settings.positions.l.x,
+                        settings.positions.l.y,
+                        'mushroomL'
+                    );
+                    break;
+                case dataStorage.limit:
+                    k.debug.log(cbProvideNotice());
+                    cbAddChild(
+                        activeZone,
+                        settings.scales.xl,
+                        settings.positions.xl.x,
+                        settings.positions.xl.y,
+                        'mushroomL'
+                    );
+                    break;
             }
         });
     };
@@ -120,6 +156,11 @@ function Manager(k, settings) {
         return {
             countClick: 0,
             limit: settings.clickLimit,
+            growPoints: {
+                s: 25,
+                m: 50,
+                l: 75,
+            },
         };
     };
 
@@ -185,12 +226,10 @@ function UserInterface(k, settings) {
     const userInterface = new UserInterface(k, settings);
     const manager = new Manager(k, settings);
     const dataStorage = manager.dataStorageInit();
-    const clickHandler = new ClickHandler(k, area, dataStorage);
+    const clickHandler = new ClickHandler(k, area, dataStorage, settings);
     userInterface.topPanel();
     userInterface.panelScoreUpdate(0);
-    clickHandler.listen(manager.provideNotice, userInterface.panelScoreUpdate);
-
-    //k.add([k.pos(120, 80), k.sprite('backgroundImage'), k.scale(1)]);
+    clickHandler.listen(manager.provideNotice, userInterface.panelScoreUpdate, scene.addChild);
 
     /*
     area.onClick(() => {
