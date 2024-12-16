@@ -87,26 +87,28 @@ function Scene(k, settings) {
 }
 
 function ClickHandler(k, activeZone, dataStorage, settings) {
-    this.listen = function (cbProvideNotice, cbPanelScoreUpdate, cbAddChild, cbVisualEffectScattering) {
+    this.listen = function (
+        cbProvideNotice,
+        cbPanelScoreUpdate,
+        cbAddChild,
+        cbVisualEffectScattering,
+        cbVisualEffectFlySymbolUp
+    ) {
         const tapsAllowed = 1;
         let taps = 0;
+        const flySymbolOption = {
+            sing: '01',
+            positionX: [110, 220],
+            positionY: 150,
+        };
 
         window.addEventListener('touchstart', (e) => (taps = e.touches.length));
 
         activeZone.onClick(() => {
             if (dataStorage.countClick < dataStorage.limit) {
-                if (!k.isTouchscreen()) {
-                    ++dataStorage.countClick;
-                    cbPanelScoreUpdate(dataStorage.countClick);
-                    cbVisualEffectScattering(k.mousePos());
-                }
+                if (!k.isTouchscreen()) this._processing();
 
-                if (k.isTouchscreen() && taps === tapsAllowed) {
-                    ++dataStorage.countClick;
-                    cbPanelScoreUpdate(dataStorage.countClick);
-                    cbVisualEffectScattering(k.mousePos());
-                }
-
+                if (k.isTouchscreen() && taps === tapsAllowed) this._processing();
             }
         });
 
@@ -151,6 +153,16 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
                     break;
             }
         });
+
+        this._processing = function () {
+            ++dataStorage.countClick;
+            cbPanelScoreUpdate(dataStorage.countClick);
+            cbVisualEffectScattering(k.mousePos());
+            cbVisualEffectFlySymbolUp(
+                flySymbolOption.sing,
+                k.vec2(k.randi(flySymbolOption.positionX[0], flySymbolOption.positionX[1]), flySymbolOption.positionY)
+            );
+        };
     };
 }
 
@@ -205,7 +217,7 @@ function UserInterface(k, settings) {
     };
 }
 
-function VisualEffect(k) {
+function VisualEffect(k, settings) {
     this.scattering = function (position) {
         const directions = [k.LEFT, k.UP, k.RIGHT, k.DOWN, k.vec2(1, 1), k.vec2(-1, -1), k.vec2(1, -1), k.vec2(-1, 1)];
         directions.forEach((dir) => {
@@ -219,6 +231,16 @@ function VisualEffect(k) {
                 k.move(dir, k.rand(230, 330)),
             ]);
         });
+    };
+
+    this.flySymbolUp = function (sing, position) {
+        k.add([
+            k.pos(position),
+            k.text(`${sing}`, { size: 30, font: settings.font }),
+            k.opacity(1),
+            k.lifespan(0.4, { fade: 0.2 }),
+            k.move(k.UP, k.rand(100, 200)),
+        ]);
     };
 }
 
@@ -234,7 +256,6 @@ function VisualEffect(k) {
         debugKey: 'd', // DELETE
     });
     k.debug.inspect = true; // DELETE
-    k.onTouchStart;
 
     k.layers(['scene', 'ui'], 'scene');
     const resource = new Resource(k, settings.sprites, settings.font);
@@ -246,11 +267,17 @@ function VisualEffect(k) {
     const userInterface = new UserInterface(k, settings);
     const manager = new Manager(k, settings);
     const dataStorage = manager.dataStorageInit();
-    const visualEffect = new VisualEffect(k);
+    const visualEffect = new VisualEffect(k, settings);
     const clickHandler = new ClickHandler(k, area, dataStorage, settings);
     userInterface.topPanel();
     userInterface.panelScoreUpdate(0);
-    clickHandler.listen(manager.provideNotice, userInterface.panelScoreUpdate, scene.addChild, visualEffect.scattering);
+    clickHandler.listen(
+        manager.provideNotice,
+        userInterface.panelScoreUpdate,
+        scene.addChild,
+        visualEffect.scattering,
+        visualEffect.flySymbolUp
+    );
 
     /*
     area.onClick(() => {
