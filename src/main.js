@@ -32,6 +32,7 @@ const settings = {
         xl: 1.5,
     },
     clickLimit: 100,
+    vibrationPattern: [100, 50, 100],
 };
 
 function Resource(k, spritesNames, fontName) {
@@ -101,6 +102,13 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
             positionX: [110, 220],
             positionY: 150,
         };
+        const vibrationPattern = settings.vibrationPattern;
+        const growPoints = [
+            dataStorage.growPoints.s,
+            dataStorage.growPoints.m,
+            dataStorage.growPoints.l,
+            dataStorage.limit,
+        ];
 
         window.addEventListener('touchstart', (e) => (taps = e.touches.length));
 
@@ -109,6 +117,8 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
                 if (!k.isTouchscreen()) this._processing();
 
                 if (k.isTouchscreen() && taps === tapsAllowed) this._processing();
+
+                if (growPoints.includes(dataStorage.countClick)) navigator.vibrate(vibrationPattern);
             }
         });
 
