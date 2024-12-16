@@ -70,7 +70,9 @@ function Scene(k, settings) {
             k.anchor('center'),
             k.scale(1),
             k.layer('scene'),
-            k.area({ shape: new k.Rect(k.vec2(0, 0), 275, 275) }),
+            k.area({
+                shape: new k.Polygon(this._createPolygon()),
+            }),
         ]);
     };
 
@@ -84,6 +86,20 @@ function Scene(k, settings) {
             k.layer('scene'),
         ]);
         parent.add(child);
+    };
+
+    this._createPolygon = function () {
+        const r = 150;
+        const parts = 48;
+        const points = [];
+
+        for (let i = 0; i < parts; i++) {
+            const x = Math.cos((2 * Math.PI * i) / parts) * r;
+            const y = Math.sin((2 * Math.PI * i) / parts) * r;
+            points.push(k.vec2(x, y));
+        }
+
+        return points;
     };
 }
 
