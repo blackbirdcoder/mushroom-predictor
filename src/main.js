@@ -1,5 +1,6 @@
 import kaplay from 'kaplay';
 import { zzfx } from '/public/libs/zzfx.micro.js';
+import { text } from '/public/data/data.json' assert { type: 'JSON' };
 
 const settings = {
     sprites: [
@@ -33,6 +34,7 @@ const settings = {
     },
     clickLimit: 100,
     vibrationPattern: [100, 50, 100],
+    predictions: text,
 };
 
 function Resource(k, spritesNames, fontName) {
@@ -212,6 +214,7 @@ function Manager(k, settings) {
 
 function UserInterface(k, settings) {
     this.panelScore = null;
+    this.panelNotification = null;
 
     this.topPanel = function () {
         const options = {
@@ -220,17 +223,9 @@ function UserInterface(k, settings) {
             x: 12,
             y: 12,
         };
-        const border = k.add([
-            k.rect(options.width, options.height, { fill: false }),
-            k.outline(10, k.WHITE),
-            k.pos(options.x, options.y),
-        ]);
 
-        const panel = k.add([
-            k.sprite('backgroundText', { tiled: true, width: options.width, height: options.height }),
-            k.pos(options.x, options.y),
-        ]);
-
+        this._border(options.width, options.height, options.x, options.y);
+        const panel = this._panel(options.width, options.height, options.x, options.y);
         panel.add([k.text(`/${settings.clickLimit}`, { size: 60, font: settings.font }), k.pos(options.x + 135, 0)]);
         this.panelScore = panel;
     };
@@ -240,6 +235,36 @@ function UserInterface(k, settings) {
         if (value >= 10) posX = value >= 10 && value < settings.clickLimit ? 60 : 20;
         this.panelScore.children.splice(1);
         this.panelScore.add([k.text(`${value}`, { size: 60, font: settings.font }), k.pos(posX, 0)]);
+    };
+
+    this.bottomPanel = function () {
+        const options = {
+            width: 336,
+            height: 128,
+            x: 12,
+            y: 500,
+        };
+
+        this._border(options.width, options.height, options.x, options.y);
+        this.panelNotification = this._panel(options.width, options.height, options.x, options.y);
+    };
+
+    this.bottomPanelText = function () {
+        const text = settings.predictions[Math.floor(Math.random() * settings.predictions.length)];
+        this.panelNotification.add([
+            k.text(`${text}`, { size: 21, font: settings.font, width: 340, align: 'center' }),
+            k.pos(0, 35),
+        ]);
+    };
+
+    // TODO: COntinue. Implementation closed button
+
+    this._border = function (width, height, x, y) {
+        k.add([k.rect(width, height, { fill: false }), k.outline(10, k.WHITE), k.pos(x, y)]);
+    };
+
+    this._panel = function (width, height, x, y) {
+        return k.add([k.sprite('backgroundText', { tiled: true, width: width, height: height }), k.pos(x, y)]);
     };
 }
 
@@ -297,6 +322,8 @@ function VisualEffect(k, settings) {
     const clickHandler = new ClickHandler(k, area, dataStorage, settings);
     userInterface.topPanel();
     userInterface.panelScoreUpdate(0);
+    userInterface.bottomPanel();
+    userInterface.bottomPanelText();
     clickHandler.listen(
         manager.provideNotice,
         userInterface.panelScoreUpdate,
