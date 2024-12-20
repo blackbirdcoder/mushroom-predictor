@@ -1,6 +1,6 @@
 import kaplay from 'kaplay';
-import { zzfx } from '/public/libs/zzfx.micro.js';
-import { text } from '/public/data/data.json' assert { type: 'JSON' };
+import { zzfx } from '/src/libs/zzfx.micro.js';
+import { text } from '/src/data/data.json' assert { type: 'JSON' };
 
 const settings = {
     sprites: [
@@ -256,7 +256,7 @@ function UserInterface(k, settings) {
             k.pos(0, 35),
         ]);
     };
-
+    //TODO: Correct the location of the json file
     // TODO: COntinue. Implementation closed button
 
     this._border = function (width, height, x, y) {
