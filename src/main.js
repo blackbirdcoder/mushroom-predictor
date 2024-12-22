@@ -107,11 +107,13 @@ function Scene(k, settings) {
 
 function ClickHandler(k, activeZone, dataStorage, settings) {
     this.listen = function (
-        cbProvideNotice,
         cbPanelScoreUpdate,
         cbAddChild,
         cbVisualEffectScattering,
-        cbVisualEffectFlySymbolUp
+        cbVisualEffectFlySymbolUp,
+        cbBottomPanel,
+        cbBottomPanelText,
+        cbCloseButton
     ) {
         const tapsAllowed = 1;
         let taps = 0;
@@ -137,48 +139,58 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
                 if (k.isTouchscreen() && taps === tapsAllowed) this._processing();
 
                 if (growPoints.includes(dataStorage.countClick)) navigator.vibrate(vibrationPattern);
-            }
-        });
 
-        activeZone.onUpdate(() => {
-            switch (dataStorage.countClick) {
-                case dataStorage.growPoints.s:
-                    cbAddChild(
-                        activeZone,
-                        settings.scales.default,
-                        settings.positions.s.x,
-                        settings.positions.s.y,
-                        'mushroomS'
-                    );
-                    break;
-                case dataStorage.growPoints.m:
-                    cbAddChild(
-                        activeZone,
-                        settings.scales.default,
-                        settings.positions.m.x,
-                        settings.positions.m.y,
-                        'mushroomM'
-                    );
-                    break;
-                case dataStorage.growPoints.l:
-                    cbAddChild(
-                        activeZone,
-                        settings.scales.default,
-                        settings.positions.l.x,
-                        settings.positions.l.y,
-                        'mushroomL'
-                    );
-                    break;
-                case dataStorage.limit:
-                    k.debug.log(cbProvideNotice());
-                    cbAddChild(
-                        activeZone,
-                        settings.scales.xl,
-                        settings.positions.xl.x,
-                        settings.positions.xl.y,
-                        'mushroomL'
-                    );
-                    break;
+                switch (dataStorage.countClick) {
+                    case dataStorage.growPoints.s:
+                        cbAddChild(
+                            activeZone,
+                            settings.scales.default,
+                            settings.positions.s.x,
+                            settings.positions.s.y,
+                            'mushroomS'
+                        );
+                        break;
+                    case dataStorage.growPoints.m:
+                        cbAddChild(
+                            activeZone,
+                            settings.scales.default,
+                            settings.positions.m.x,
+                            settings.positions.m.y,
+                            'mushroomM'
+                        );
+                        break;
+                    case dataStorage.growPoints.l:
+                        cbAddChild(
+                            activeZone,
+                            settings.scales.default,
+                            settings.positions.l.x,
+                            settings.positions.l.y,
+                            'mushroomL'
+                        );
+                        break;
+                    case dataStorage.limit:
+                        cbAddChild(
+                            activeZone,
+                            settings.scales.xl,
+                            settings.positions.xl.x,
+                            settings.positions.xl.y,
+                            'mushroomL'
+                        );
+                        cbBottomPanel();
+                        cbBottomPanelText();
+                        cbCloseButton(() => {
+                            dataStorage.countClick = 0;
+                            cbPanelScoreUpdate(dataStorage.countClick);
+                            cbAddChild(
+                                activeZone,
+                                settings.scales.default,
+                                settings.positions.xs.x,
+                                settings.positions.xs.y,
+                                'mushroomXS'
+                            );
+                        });
+                        break;
+                }
             }
         });
 
@@ -206,15 +218,12 @@ function Manager(k, settings) {
             },
         };
     };
-
-    this.provideNotice = function () {
-        return 'YOU WIN';
-    };
 }
 
 function UserInterface(k, settings) {
-    this.panelScore = null;
-    this.panelNotification = null;
+    this._panelScore = null;
+    this._panelNotification = null;
+    this._panelNotificationBorder = null;
 
     this.topPanel = function () {
         const options = {
@@ -227,17 +236,17 @@ function UserInterface(k, settings) {
         this._border(options.width, options.height, options.x, options.y);
         const panel = this._panel(options.width, options.height, options.x, options.y);
         panel.add([k.text(`/${settings.clickLimit}`, { size: 60, font: settings.font }), k.pos(options.x + 135, 0)]);
-        this.panelScore = panel;
+        this._panelScore = panel;
     };
 
     this.panelScoreUpdate = (value) => {
         let posX = 100;
         if (value >= 10) posX = value >= 10 && value < settings.clickLimit ? 60 : 20;
-        this.panelScore.children.splice(1);
-        this.panelScore.add([k.text(`${value}`, { size: 60, font: settings.font }), k.pos(posX, 0)]);
+        this._panelScore.children.splice(1);
+        this._panelScore.add([k.text(`${value}`, { size: 60, font: settings.font }), k.pos(posX, 0)]);
     };
 
-    this.bottomPanel = function () {
+    this.bottomPanel = () => {
         const options = {
             width: 336,
             height: 128,
@@ -245,22 +254,40 @@ function UserInterface(k, settings) {
             y: 500,
         };
 
-        this._border(options.width, options.height, options.x, options.y);
-        this.panelNotification = this._panel(options.width, options.height, options.x, options.y);
+        this._panelNotificationBorder = this._border(options.width, options.height, options.x, options.y);
+        this._panelNotification = this._panel(options.width, options.height, options.x, options.y);
     };
 
-    this.bottomPanelText = function () {
+    this.bottomPanelText = () => {
         const text = settings.predictions[Math.floor(Math.random() * settings.predictions.length)];
-        this.panelNotification.add([
+        this._panelNotification.add([
             k.text(`${text}`, { size: 21, font: settings.font, width: 340, align: 'center' }),
             k.pos(0, 35),
         ]);
     };
-    //TODO: Correct the location of the json file
-    // TODO: COntinue. Implementation closed button
+
+    this.closeButton = (cbRestart) => {
+        const btn = k.add([
+            k.sprite('buttonClose'),
+            k.pos(this._panelNotification.pos.x + 300, this._panelNotification.pos.y - 10),
+            k.scale(1.5),
+            k.layer('ui'),
+            k.z(10),
+            k.anchor('center'),
+            k.area(),
+        ]);
+        const circle = k.add([k.circle(26, { fill: true }), k.pos(btn.pos.x, btn.pos.y), k.layer('ui')]);
+
+        btn.onClick(() => {
+            [this._panelNotification, this._panelNotification, this._panelNotificationBorder, circle, btn].forEach(
+                (item) => item.destroy()
+            );
+            cbRestart();
+        });
+    };
 
     this._border = function (width, height, x, y) {
-        k.add([k.rect(width, height, { fill: false }), k.outline(10, k.WHITE), k.pos(x, y)]);
+        return k.add([k.rect(width, height, { fill: false }), k.outline(10, k.WHITE), k.pos(x, y)]);
     };
 
     this._panel = function (width, height, x, y) {
@@ -322,14 +349,14 @@ function VisualEffect(k, settings) {
     const clickHandler = new ClickHandler(k, area, dataStorage, settings);
     userInterface.topPanel();
     userInterface.panelScoreUpdate(0);
-    userInterface.bottomPanel();
-    userInterface.bottomPanelText();
     clickHandler.listen(
-        manager.provideNotice,
         userInterface.panelScoreUpdate,
         scene.addChild,
         visualEffect.scattering,
-        visualEffect.flySymbolUp
+        visualEffect.flySymbolUp,
+        userInterface.bottomPanel,
+        userInterface.bottomPanelText,
+        userInterface.closeButton
     );
 
     /*
