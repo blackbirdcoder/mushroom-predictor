@@ -37,6 +37,9 @@ const settings = {
     predictions: text,
     sounds: {
         click: [1.8, 0, 543, 0.01, 0.06, 0.16, 0, 2.6, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0.73, 0.04, 0, 550],
+        up: [1.8, 0, 527, 0.06, 0.15, 0.06, 1, 3.5, 7, -0.3, 250, 0, 0.07, 0, 0, 0, 0.19, 0.96, 0.22, 0.38, 0],
+        winner: [1.8, 0.05, 520, 0.07, 0.25, 0.37, 1, 0.8, -1, 0, 254, 0.08, 0.03, 0, 0, 0, 0, 0.74, 0.18, 0, -1231],
+        closed: [1.8, 0, 208, 0, 0.07, 0.12, 1, 3, 0, 9, 297, 0.1, 0.03, 0, 0, 0, 0.06, 0.92, 0.02, 0, -1500],
     },
 };
 
@@ -158,6 +161,7 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
 
                 switch (dataStorage.countClick) {
                     case dataStorage.growPoints.s:
+                        zzfx(...settings.sounds.up);
                         cbAddChild(
                             activeZone,
                             settings.scales.default,
@@ -167,6 +171,7 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
                         );
                         break;
                     case dataStorage.growPoints.m:
+                        zzfx(...settings.sounds.up);
                         cbAddChild(
                             activeZone,
                             settings.scales.default,
@@ -176,6 +181,7 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
                         );
                         break;
                     case dataStorage.growPoints.l:
+                        zzfx(...settings.sounds.up);
                         cbAddChild(
                             activeZone,
                             settings.scales.default,
@@ -185,6 +191,7 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
                         );
                         break;
                     case dataStorage.limit:
+                        zzfx(...settings.sounds.winner);
                         cbAddChild(
                             activeZone,
                             settings.scales.xl,
@@ -204,6 +211,7 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
                                 settings.positions.xs.y,
                                 'mushroomXS'
                             );
+                            zzfx(...settings.sounds.closed);
                         });
                         break;
                 }
@@ -223,7 +231,7 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
     };
 }
 
-function Manager(k, settings) {
+function Manager(settings) {
     this.dataStorageInit = function () {
         return {
             countClick: 0,
@@ -348,9 +356,7 @@ function VisualEffect(k, settings) {
         pixelDensity: 2,
         crisp: true,
         texFilter: 'nearest',
-        debugKey: 'd', // DELETE
     });
-    k.debug.inspect = true; // DELETE
 
     k.layers(['scene', 'ui'], 'scene');
     const resource = new Resource(k, settings.sprites, settings.font);
@@ -362,7 +368,7 @@ function VisualEffect(k, settings) {
         const area = scene.clickableArea();
         scene.addChild(area, settings.scales.default, settings.positions.xs.x, settings.positions.xs.y, 'mushroomXS');
         const userInterface = new UserInterface(k, settings);
-        const manager = new Manager(k, settings);
+        const manager = new Manager(settings);
         const dataStorage = manager.dataStorageInit();
         const visualEffect = new VisualEffect(k, settings);
         const clickHandler = new ClickHandler(k, area, dataStorage, settings);
