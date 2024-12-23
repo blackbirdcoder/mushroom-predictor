@@ -35,6 +35,9 @@ const settings = {
     clickLimit: 100,
     vibrationPattern: [100, 50, 100],
     predictions: text,
+    sounds: {
+        click: [1.8, 0, 543, 0.01, 0.06, 0.16, 0, 2.6, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0.73, 0.04, 0, 550],
+    },
 };
 
 function Resource(k, spritesNames, fontName) {
@@ -88,6 +91,19 @@ function Scene(k, settings) {
             k.layer('scene'),
         ]);
         parent.add(child);
+    };
+
+    this.intro = function (nextSceneName, scene) {
+        k.add([k.rect(k.width(), k.height()), k.color(settings.colors.background), k.pos(0, 0)]);
+        const buttonPlay = k.add([
+            k.rect(200, 70, { fill: false }),
+            k.area(),
+            k.outline(7, k.rgb(k.WHITE)),
+            k.pos(k.center()),
+            k.anchor('center'),
+        ]);
+        buttonPlay.add([k.text('play', { font: settings.font, size: 45 }), k.anchor('center')]);
+        buttonPlay.onClick(() => k.go(nextSceneName, scene));
     };
 
     this._createPolygon = function () {
@@ -195,6 +211,7 @@ function ClickHandler(k, activeZone, dataStorage, settings) {
         });
 
         this._processing = function () {
+            zzfx(...settings.sounds.click);
             ++dataStorage.countClick;
             cbPanelScoreUpdate(dataStorage.countClick);
             cbVisualEffectScattering(k.mousePos());
@@ -339,30 +356,27 @@ function VisualEffect(k, settings) {
     const resource = new Resource(k, settings.sprites, settings.font);
     resource.loader();
     const scene = new Scene(k, settings);
-    scene.paintOver();
-    const area = scene.clickableArea();
-    scene.addChild(area, settings.scales.default, settings.positions.xs.x, settings.positions.xs.y, 'mushroomXS');
-    const userInterface = new UserInterface(k, settings);
-    const manager = new Manager(k, settings);
-    const dataStorage = manager.dataStorageInit();
-    const visualEffect = new VisualEffect(k, settings);
-    const clickHandler = new ClickHandler(k, area, dataStorage, settings);
-    userInterface.topPanel();
-    userInterface.panelScoreUpdate(0);
-    clickHandler.listen(
-        userInterface.panelScoreUpdate,
-        scene.addChild,
-        visualEffect.scattering,
-        visualEffect.flySymbolUp,
-        userInterface.bottomPanel,
-        userInterface.bottomPanelText,
-        userInterface.closeButton
-    );
-
-    /*
-    area.onClick(() => {
-        zzfx('1.8,0,543,.01,.06,.16,0,2.6,0,30,0,0,0,0,0,0,0,.73,.04,0,550');
-       
+    k.scene('intro', (scene) => scene.intro('play', scene));
+    k.scene('play', (scene) => {
+        scene.paintOver();
+        const area = scene.clickableArea();
+        scene.addChild(area, settings.scales.default, settings.positions.xs.x, settings.positions.xs.y, 'mushroomXS');
+        const userInterface = new UserInterface(k, settings);
+        const manager = new Manager(k, settings);
+        const dataStorage = manager.dataStorageInit();
+        const visualEffect = new VisualEffect(k, settings);
+        const clickHandler = new ClickHandler(k, area, dataStorage, settings);
+        userInterface.topPanel();
+        userInterface.panelScoreUpdate(0);
+        clickHandler.listen(
+            userInterface.panelScoreUpdate,
+            scene.addChild,
+            visualEffect.scattering,
+            visualEffect.flySymbolUp,
+            userInterface.bottomPanel,
+            userInterface.bottomPanelText,
+            userInterface.closeButton
+        );
     });
-    */
+    k.go('intro', scene);
 })(settings);
