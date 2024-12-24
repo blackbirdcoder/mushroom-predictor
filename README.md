@@ -1,4 +1,4 @@
-# Clicker Mushroom Predicted
+# Clicker Mushroom Predictor
 
 This is a clicker game. But it's not just any clicker it's one with predictions! In short, you’re given a mushroom, and your goal is to grow it by tapping the screen to earn points. Once you've accumulated enough points, the mushroom will fully grow, and you'll receive a prediction about your near future.
 
@@ -6,10 +6,10 @@ This is a clicker game. But it's not just any clicker it's one with predictions!
 
 ### Folder structure
 
--   `src` - source code for your kaplay project
--   `public` - assets and other static files
--   `dist` - distribution folder, contains your index.html, built js bundle and static assets
--   `screenshot` - image of the game
+- `src` - source code for your kaplay project
+- `public` - assets and other static files
+- `dist` - distribution folder, contains your index.html, built js bundle and static assets
+- `screenshot` - image of the game
 
 ### Development
 
